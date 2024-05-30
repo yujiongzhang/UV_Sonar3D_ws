@@ -20,6 +20,8 @@
 #include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/common/transforms.h>
 
+
+
 class m750d_3D : public rclcpp::Node
 {
 private:
@@ -33,7 +35,7 @@ public:
     m750d_3D(std::string name) : Node(name)
     {
         pointCloud = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-        ScanRange = 1.2;
+        ScanRange = 5.0;
         z_p = 0;
         subscription_ = this->create_subscription<sensor_msgs::msg::Image>(
             "/oculus_m1200d/sonar_image", 10, std::bind(&m750d_3D::image_callback, this, std::placeholders::_1));
@@ -92,35 +94,38 @@ private:
             //环扫提取有效轮廓
             Mat edge_effe(close_image.size(), close_image.type(), Scalar(0));//clear 0 
             edgeExtraction(close_image, edge_effe, 100);
-
-            // // 显示图像
-            // cv::imshow("ROS Image", raw_image);
-            // cv::imshow("Gray Image", gray_image);
-            // cv::imshow("enhance Image", enhance_image);
-            // cv::imshow("bila_res", bila_res);
-            // cv::imshow("close_image", close_image);
-            // cv::imshow("edge_effe", edge_effe);
-
-            // cv::waitKey(1); // 等待按键输入
-
+            
             int width = edge_effe.cols;
             int height = edge_effe.rows;
+
+            // 显示图像
+            cv::imshow("raw Image", raw_image);
+            cv::imshow("Gray Image", gray_image);
+            cv::imshow("enhance Image", enhance_image);
+            cv::imshow("bila_res", bila_res);
+            cv::imshow("close_image", close_image);
+            cv::imshow("edge_effe", edge_effe);
+
+            cv::waitKey(1); // 等待按键输入
+
+
             int origin_x = width/2;
             int origin_y = height;
-            z_p += 0.01; 
+            z_p += 0.02; 
             PixelResolution = ScanRange / (double)height;
             for (int x = 0; x < width; x++)
                 {
                     for (int y = 0; y < height; y++)
                     {
                         cv::Point2d point_index(x,y);
-                        if (edge_effe.at<uchar>(point_index) > 0)
+                        // if (edge_effe.at<uchar>(point_index) > 0)
+                        if (gray_image.at<uchar>(point_index) > 100)
                         {
                             int x_p = origin_y - y;
                             int y_p = origin_x - x;
 
                             pcl::PointXYZ p;
-                            p.x = x_p * PixelResolution;        //前进方向为X轴   小水池5
+                            p.x = x_p * PixelResolution;
                             p.y = y_p * PixelResolution; 
                             p.z = z_p; 
                             pointCloud->push_back(p);

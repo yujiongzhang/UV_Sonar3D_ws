@@ -33,8 +33,19 @@ ament_target_dependencies(
 )
 target_link_libraries(m750d_3D ${PCL_LIBRARIES})
 
+add_executable(pc_stitch src/pc_stitch.cpp )
+ament_target_dependencies(
+  pc_stitch 
+  rclcpp 
+  sensor_msgs 
+  cv_bridge
+  OpenCV
+)
+target_link_libraries(pc_stitch ${PCL_LIBRARIES})
+
 install(TARGETS
   m750d_3D
+  pc_stitch
   DESTINATION lib/${PROJECT_NAME}
 )
 
