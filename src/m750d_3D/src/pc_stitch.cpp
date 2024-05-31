@@ -78,7 +78,7 @@ public:
         time(&timep);//获取从1970至今过了多少秒，存入time_t类型的timep
         strftime( file_name, sizeof(file_name), "./results/%Y.%m.%d %H-%M-%S.pcd",localtime(&timep) ); //最后一个参数是用localtime将秒数转化为struct tm结构体
 
-        // pcl::io::savePCDFile(std::string(file_name), *merged_cloud);
+        pcl::io::savePCDFile(std::string(file_name), *merged_cloud);
 
         pcl::visualization::PCLVisualizer viewer("display");
         //原始点云绿色
