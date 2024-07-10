@@ -1,0 +1,41 @@
+YellowBot:
+  # node_name
+  imu_node:
+    # parameters
+    ros__parameters:
+      # topic's name will be namespace setted in the launch file plus original publisher topic.
+      enable: true 
+      isMagnetic: true
+      frequency: 100
+      port: "/dev/ttyCH9344USB7"
+      baudrate: 115200
+
+  depth_node:
+    # parameters
+    ros__parameters:
+      # topic's name will be namespace setted in the launch file plus original publisher topic.
+      enable: true   
+      frequency: 100
+      port: "/dev/ttyCH9344USB1"
+      baudrate: 115200
+      depth_covariance: 0.1
+
+  altimeter_node:
+    # parameters
+    ros__parameters:
+      # topic's name will be namespace setted in the launch file plus original publisher topic.
+      enable: false    
+      frequency: 1
+      port: "/dev/ttyCH9344USB4"
+      baudrate: 115200
+
+  gps_node:
+    # parameters
+    ros__parameters:
+      # topic's name will be namespace setted in the launch file plus original publisher topic.
+      enable: false    
+      frequency: 10
+      port: "/dev/ttyCH9344USB0"
+      baudrate: 115200
+    
+    

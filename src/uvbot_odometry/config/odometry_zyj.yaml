@@ -1,0 +1,283 @@
+YellowBot:
+    ###ekf配置文件###
+    ekf_filter_node:
+        ros__parameters:
+    # 滤波器输出位置估计的频率，单位为Hz。请注意，过滤器在从其中一个输入接收到至少一条消息之前不会开始计算。
+    # 然后，无论是否接收到更多的测量值，它都将以此处指定的频率连续运行。如果未指定，则默认为30。        
+            frequency: 30.0
+            use_sim_time: true
+            initial_state: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 , 0.0, 0.0, 0.0]
+    
+    # 我们认为传感器超时的时间段（以秒为单位）。在这种情况下，我们在EKF上执行一个预测周期，而不进行校正。
+    # 这个参数可以被认为是滤波器产生新输出的最小频率。如果未指定，则默认为1/频率。
+            sensor_timeout: 0.1
+
+    # ekf_localization_node and ukf_localization_node都使用3D全向运动模型。
+    # 如果此参数设置为true，则不会在状态估计中使用任何三维信息。
+    # 如果您在平面环境中操作，并且希望忽略地平面中可能检测到的微小变化的影响，请使用此选项
+    # 例如通过IMU。如果未指定，则默认为false。 
+            two_d_mode: false
+    
+    
+    # 使用此参数可以为ekf_location_node生成的变换提供偏移。这可以用于未来的日期转换，这是与其他一些包交互所必需的。
+    # 如果未指定，则默认为0.0。
+            transform_time_offset: 0.0
+    
+    
+    #使用此参数可以指定tf侦听器应等待转换可用的时间。
+    #如果未指定，则默认为0.0。
+            transform_timeout: 0.0
+    
+    
+    #如果遇到问题，请尝试将其设置为true，然后echo the /diagnostics_agg主题，查看节点是否对任何设置或数据不满意
+            print_diagnostics: true
+    
+    
+    # 调试设置。不适合胆小的人。向debug_out_file指定的文件输出数量惊人的信息。我希望你喜欢矩阵！
+    # 请注意，将此设置为true将对节点的性能产生严重的有害影响。如果未指定，则默认为false。
+            debug: false
+    #如果未指定，则默认为“robot_location_debug.txt”。请指定完整路径。
+            debug_out_file: /path/to/debug/file.txt
+
+    # 我们是否允许旧的测量结果导致更新状态的重新发布
+            permit_corrected_publication: false
+    #是否发布加速状态。如果未指定，则默认为false。
+            publish_acceleration: false
+    #是否在/tf主题上广播转换。如果未指定，则默认为true。
+            publish_tf: true
+    
+    
+    # REP-105(http://www.ros.org/reps/rep-0105.html)指定四个主要坐标系：base_link、odom、map和earth。
+    # base_link是固定在机器人上的坐标系。odom和map都是world-fixed frames。
+    # 机器人在odom框架中的位置会随着时间的推移而漂移，但在短期内是准确的，应该是连续的。因此，odom帧是用于执行局部运动计划的最佳帧。
+    # 与odom框架一样，map框架是一个世界固定的坐标框架，虽然它包含了机器人最全局准确的位置估计，但它会受到离散跳跃的影响，
+    # 例如，由于GPS数据的融合或基于地图的定位节点的校正。地球坐标系用于通过给多个地图坐标系提供一个公共参考坐标系来关联它们。
+    # ekf_location_node和ukf_localization_node与map帧无关。
+    
+    #以下是如何使用以下设置：
+    # 1.将map_frame、odom_frame和base_link帧设置为系统的适当帧名称。
+    #     1a. 如果您的系统没有map_frame，只需将其删除，并确保“world_frame”设置为odom_frame的值。
+    # 2. 如果要融合连续位置数据，如车轮编码器里程计、视觉里程计或IMU数据，请将“world_frame”设置为odom_frame值。这是robot_location的状态估计节点的默认行为。
+    # 3. 如果您正在融合受离散跳跃影响的全球绝对位置数据（例如，GPS或地标的位置更新观察），然后：    
+    #     3a. 将“world_frame”设置为map_frame值
+    #     3b. 确保其他东西正在生成odom->base_link变换。请注意，这甚至可以是robot_location的另一个状态估计节点！但是，该实例不应该融合全局数据。
+    
+            map_frame: rviz              # 如果未指定，则默认为“map”
+            odom_frame: world            # 如果未指定，则默认为"odom"
+            base_link_frame: sparus  # 如果未指定，则默认为"base_link"
+            world_frame: world           # 如果未指定，则默认为"odom"
+        #     map_frame: map              
+        #     odom_frame: odom            
+        #     base_link_frame: base_link  
+        #     world_frame: odom           
+    # 过滤器接受来自每个输入消息类型的任意数量的输入（nav_msgs/Odometry、geometry_msgs/PoseWithCovarianceStamped、
+    # geometry_msgs/TwistWithCovariance Stamped,sensor_msgs/Imu）。
+    #要添加输入，只需将序列中的下一个数字附加到其“base”名称，例如odom0、odom1、twist0、twist1、imu0、imu1、imu2等。
+    #该值应为topic名称。这些参数显然没有默认值，必须指定。
+        #     twist0:  /YellowBot/dvl
+    
+    # 每个传感器读数都会更新过滤器的部分或全部状态。这些选项使您能够更好地控制将每个测量值输入到过滤器的值。
+    # 例如，如果您有里程计消息作为输入，但只想使用其Z位置值，则将整个矢量设置为false，第三个条目除外。
+    # 值的顺序为x、y、z、roll、pitch、yaw、vx、vy、vz、vroll、vpitch、vyaw、ax、ay、az。
+    # 请注意，并非某些消息类型不提供过滤器估计的某些状态变量。例如，TwistWithCovarianceStamped消息没有位姿信息，
+    # 因此在这种情况下，前六个值将毫无意义。如果未指定，则每个向量默认为全假，从而有效地使每个传感器都需要此参数。
+        #     twist0_config: [false, false, false, #x-y-z坐标系的坐标（机器人位置）
+        #                 false, false, false, #绕x/y/z轴的角度（机器人方向）、
+        #                 true, true, true,  #沿x/y/z轴的线速度、
+        #                 false, false, true,  #绕x/y/z轴的角速度、
+        #                 false, false, false] #沿x/y/z轴的加速度。
+    
+    #如果您有高频数据或使用低频参数值运行，则可能需要增加订阅队列的大小，以便融合更多的测量值。
+        #     twist0_queue_size: 20
+    
+    # [高级]ROS中的大消息在高频到达时会表现出奇怪的行为。这是Nagle算法的结果。
+    # 此选项告诉ROS订户使用tcpNoDelay选项，该选项禁用Nagle的算法。
+        #     twist0_nodelay: false
+    
+    # [高级]当用两个传感器测量一个姿态变量时，可能会出现两个传感器都报告不足的情况。这可能导致滤波器在每次测量到达时快速来回跳跃。
+    # 在这些情况下，（a）校正测量协变量，或者（b）如果其中一个传感器也测量速度，则让一个传感器测量姿态，而另一个传感器则测量速度，
+    # 这通常是有意义的。然而，做（a）或（b）并不总是可行的，因此我们公开了微分参数。启用差分模式时，通过对绝对姿态测量值进行微分，
+    # 将所有绝对姿态数据转换为速度数据。然后像往常一样对这些速度进行积分。注：这仅适用于提供姿态测量的传感器；
+    # 将twist测量的微分设置为true没有效果。
+        #     twist0_differential: false
+    
+    # [ADVANCED]当节点启动时，如果此参数为真，则第一次测量将被视为所有未来测量的“零点”。虽然你可以用微分参数计获得同样的效果，
+    # 但关键的区别在于，相对参数不会导致测量在积分之前转换为速度。如果你只是想让给定传感器的测量从0开始，请将其设置为true。
+        #     twist0_relative: false
+    
+    # [ADVANCED]如果您的数据存在异常值，请使用这些阈值设置（表示为Mahalanobis距离）来控制允许传感器测量距离当前车辆状态的距离。
+    # 如果未指定，则每个阈值都默认为numeric_limits＜double＞：：max（）。如果不需要，强烈建议删除这些参数。
+    # 数据是在姿势和扭曲变量级别指定的，而不是单独为每个变量指定的。对于同时具有姿势和扭曲数据的消息，
+    # 该参数指定我们将阈值应用于消息的哪一部分。
+        #     twist0_rejection_threshold: 2.0
+    
+    # Further input parameter examples
+    # 进一步的输入参数示例
+            # odom1: example/odom2
+            # odom1_config: [false, false, true,
+            #                false, false, false,
+            #                false, false, false,
+            #                false, false, true,
+            #                false, false, false]
+            # odom1_differential: false
+            # odom1_relative: true
+            # odom1_queue_size: 2
+            # odom1_pose_rejection_threshold: 2.0
+            # odom1_twist_rejection_threshold: 0.2
+            # odom1_nodelay: false
+            # pose0: example/pose
+            # pose0_config: [true,  true,  false,
+            #                false, false, false,
+            #                false, false, false,
+            #                false, false, false,
+            #                false, false, false]
+            # pose0_differential: true
+            # pose0_relative: false
+            # pose0_queue_size: 5
+            # pose0_rejection_threshold: 2.0  # 注意参数名称的差异
+            # pose0_nodelay: false
+    
+            # twist0: example/twist
+            # twist0_config: [false, false, false,
+            #                 false, false, false,
+            #                 true,  true,  true,
+            #                 false, false, false,
+            #                 false, false, false]
+            # twist0_queue_size: 3
+            # twist0_rejection_threshold: 2.0
+            # twist0_nodelay: false
+           
+            twist0:  /dvl2
+            twist0_config: [false, false, false, #x-y-z坐标系的坐标（机器人位置）
+                            false, false, false, #绕x/y/z轴的角度（机器人方向）、
+                            true, true, true,  #沿x/y/z轴的线速度、
+                            false, false, false,  #绕x/y/z轴的角速度、
+                            false, false, false] #沿x/y/z轴的加速度。
+            twist0_queue_size: 20
+            twist0_nodelay: false
+            twist0_differential: false
+            twist0_relative: false
+        #     twist0_rejection_threshold: 2.0
+    
+            imu0: /adis_imu_covariance
+            imu0_config: [false, false, false,   #x-y-z坐标系的坐标（机器人位置）
+                            true, true, true,  #绕x/y/z轴的角度（机器人方向）
+                            false, false, false,   #沿x/y/z轴的线速度
+                            false,  false,  false,     #绕x/y/z轴的角速度
+                            false, false, false]    #沿x/y/z轴的加速度              
+            imu0_nodelay: false
+            imu0_differential: false
+            imu0_relative: false
+            imu0_queue_size: 20
+        #     imu0_pose_rejection_threshold: 0.8                 # 注意参数名称的差异
+        #     imu0_twist_rejection_threshold: 0.8                #
+        #     imu0_linear_acceleration_rejection_threshold: 0.8  #
+    # [高级]一些IMU会自动消除重力造成的加速度，而另一些则不会。如果您的数据不符合，请将其设置为true，
+    # 并*确保*您的数据符合REP-103，特别是数据在ENU框架中。
+            imu0_remove_gravitational_acceleration: false
+
+            pose0: /pose_z
+            pose0_config: [false,  false,  true,
+                            false, false, false,
+                            false, false, false,
+                            false, false, false,
+                            false, false, false]
+            pose0_differential: false
+            pose0_relative: false
+            pose0_queue_size: 10
+            pose0_nodelay: false
+
+            #若开启UGPS，请取消下面的注释
+        #     pose1: pose_z
+        #     pose1_config: [true,  true,  false,
+        #                    false, false, false,
+        #                    false, false, false,
+        #                    false, false, false,
+        #                    false, false, false]
+        #     pose1_differential: true
+        #     pose1_relative: false
+        #     pose1_queue_size: 5
+        #     pose1_nodelay: false
+            
+    # [高级]EKF和UKF模型遵循标准的预测/校正周期。在预测期间，如果没有加速度参考，则简单地将时间t+1处的速度预测为与时间t处的速度相同。
+    # 在校正期间，将该预测值与测量值融合以产生新的速度估计。这可能是有问题的，因为最终速度实际上是旧速度和新速度的加权平均值。
+    # 当这个速度被整合到一个新的姿势中时，结果可能是缓慢的隐蔽。这种效果在旋转过程中的激光雷达数据中尤为明显。为了解决这个问题，
+    # 用户可以尝试为有问题的速度变量增加process_noise_covariance，或者在测量本身中减少有问题的变量的方差。
+    # 此外，用户还可以利用在我们进行预测时向机器人发出的控制命令。如果使用控制，它将被转换为加速项，该加速项将在预测过程中使用。
+    # 请注意，如果从其中一个输入中可以获得有关变量的加速度测量值，则控制项将被忽略。
+    # 无论我们是否在预测期间使用控制输入。默认为false。
+            use_control: false
+    # Whether the input (assumed to be cmd_vel) is a geometry_msgs/Twist or geometry_msgs/TwistStamped message. Defaults to
+    # false.
+    
+    #输入（假定为cmd_vel）是geometry_msgs/Twist还是geometry_msgs/TwistStamped消息。默认为false。
+            stamped_control: false
+    # The last issued control command will be used in prediction for this period. Defaults to 0.2.
+    
+    #最后发布的控制命令将用于该时段的预测。默认值为0.2。
+            control_timeout: 0.2
+    # Which velocities are being controlled. Order is vx, vy, vz, vroll, vpitch, vyaw.
+    
+    #正在控制哪些速度。顺序是vx、vy、vz、vroll、vpitch、vyaw。
+            control_config: [true, false, false, false, false, true]
+    # Places limits on how large the acceleration term will be. Should match your robot's kinematics.
+    
+    # 限制加速度项的大小。应与机器人的运动学相匹配。
+            acceleration_limits: [1.3, 0.0, 0.0, 0.0, 0.0, 3.4]
+    # Acceleration and deceleration limits are not always the same for robots.
+    
+    #机器人的加速和减速限制并不总是相同的。
+            deceleration_limits: [1.3, 0.0, 0.0, 0.0, 0.0, 4.5]
+    # If your robot cannot instantaneously reach its acceleration limit, the permitted change can be controlled with these
+    # gains
+    
+    #如果你的机器人不能立即达到其加速度极限，那么可以通过这些增益来控制允许的变化
+            acceleration_gains: [0.8, 0.0, 0.0, 0.0, 0.0, 0.9]
+    # If your robot cannot instantaneously reach its deceleration limit, the permitted change can be controlled with these
+    # gains
+    
+    # 如果你的机器人不能立即达到减速极限，那么允许的变化可以用这些增益来控制
+            deceleration_gains: [1.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+    
+    # [ADVANCED]过程噪声协方差矩阵可能很难调整，并且可能因每个应用而变化，因此它被公开为配置参数。
+    # 这个矩阵表示我们在每个预测步骤之后添加到总误差中的噪声。全向运动模型与系统匹配得越好，这些值就越小。
+    # 然而，如果用户发现给定的变量收敛较慢，一种方法是增加该变量的process_noise_covariance对角值，这将导致滤波器的预测误差更大，
+    # 这将使得滤波器在校正期间更加信任传入的测量。值的顺序为x、y、z、滚转、俯仰、偏航、vx、vy、vz、vroll、vpitch、vyaw、ax、ay、az。
+    # 如果未指定，则默认为以下矩阵。
+            process_noise_covariance: [0.05, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                    0.0,    0.05, 0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                    0.0,    0.0,    0.06, 0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                    0.0,    0.0,    0.0,    0.03, 0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                    0.0,    0.0,    0.0,    0.0,    0.03, 0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                    0.0,    0.0,    0.0,    0.0,    0.0,    0.06, 0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.025, 0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.025, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.04, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                                    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.01, 0.0,    0.0,    0.0,    0.0,    0.0,
+                                    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.01, 0.0,    0.0,    0.0,    0.0,
+                                    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.02, 0.0,    0.0,    0.0,
+                                    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.01, 0.0,    0.0,
+                                    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.01, 0.0,
+                                    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.015]
+    
+    # [ADVANCED]这表示状态估计误差协方差矩阵的初始值。将对角线值（方差）设置为大值将导致所讨论变量的初始测量的快速收敛。
+    # 用户应注意不要对不会直接测量的变量使用大值。
+    # 用户应注意不要对不会直接测量的变量使用大值。
+    # 值的顺序为x、y、z、滚转、俯仰、偏航、vx、vy、vz、vroll、vpitch、vyaw、ax、ay、az。
+    # 如果未指定，则默认为以下矩阵。
+            initial_estimate_covariance: [1e-9, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                        0.0,    1e-9, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                        0.0,    0.0,    1e-9, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                        0.0,    0.0,    0.0,    1e-9, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                        0.0,    0.0,    0.0,    0.0,    1e-9, 0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                        0.0,    0.0,    0.0,    0.0,    0.0,    1e-9, 0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                        0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    1e-9, 0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                        0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    1e-9, 0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                        0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    1e-9, 0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                        0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    1e-9,  0.0,     0.0,     0.0,    0.0,    0.0,
+                                        0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     1e-9,  0.0,     0.0,    0.0,    0.0,
+                                        0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     1e-9,  0.0,    0.0,    0.0,
+                                        0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     1e-9, 0.0,    0.0,
+                                        0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    1e-9, 0.0,
+                                        0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    1e-9]
+    

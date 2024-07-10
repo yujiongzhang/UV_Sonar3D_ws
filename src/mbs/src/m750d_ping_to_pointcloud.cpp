@@ -57,9 +57,6 @@ public:
 
         std::vector<std::pair<double, double>> points_map;//存储符合要求的点的map
         std::vector<std::pair<double, double>> edge_points_map;//存储符合要求的边缘点的map
-        // std::vector<double> scan_vector;
-        // float m_angle_min = (float)bearings[0]/18000.0 * M_PI;
-        // float m_angle_max = (float)bearings[n_beams-1]/18000.0 * M_PI;
 
         for (int beams_i = 0; beams_i < n_beams; beams_i++)
         {
