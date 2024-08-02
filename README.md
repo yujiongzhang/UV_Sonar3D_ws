@@ -10,7 +10,8 @@ the ROS2 driver for oculus m750d sonar, which depends on `oculus_interface`.
 3D reconstruction of underwater structures using forward looking sonar (multibeam sonar).
 
 ### m750d_3D
-Convert m750d sonar image data `/oculus_m1200d/sonar_image` into a 3D points cloud
+Convert m750d sonar image data `/oculus_m1200d/sonar_image` into a 3D points cloud. 
+[m750d_3d](./src/m750d_3d/m750d_3d.md)
 
 ### uvbot_odometry 
 use of lobot_location ekf_node
