@@ -260,7 +260,7 @@ void ringScanForEdge_Sector(const cv::Mat& image, cv::Mat& edge, int threshold)
 
 }
 
-
+//从下往上边缘点
 void edgeExtraction(const cv::Mat &image, cv::Mat &edge, int threshold)
 {
 

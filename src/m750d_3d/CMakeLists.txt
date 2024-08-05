@@ -34,6 +34,15 @@ ament_target_dependencies(
 )
 target_link_libraries(m750d_3D ${PCL_LIBRARIES})
 
+add_executable(simu_m750d_3D src/simu_m750d_3D.cpp src/image_fun.cpp)
+ament_target_dependencies(
+  simu_m750d_3D 
+  rclcpp 
+  sensor_msgs 
+  cv_bridge
+  OpenCV
+)
+target_link_libraries(simu_m750d_3D ${PCL_LIBRARIES})
 
 add_executable(vertical_scan_reconstruction src/vertical_scan_reconstruction.cpp src/image_fun.cpp)
 ament_target_dependencies(
@@ -59,6 +68,7 @@ target_link_libraries(pc_stitch ${PCL_LIBRARIES})
 
 install(TARGETS
   m750d_3D
+  simu_m750d_3D
   vertical_scan_reconstruction
   pc_stitch
   DESTINATION lib/${PROJECT_NAME}
