@@ -43,7 +43,7 @@ public:
     vertical_scan(std::string name) : Node(name)
     {
         pointCloud = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-        ScanRange = 5.0;
+        ScanRange = 10.0;
         z_p = 0;
         subscription_ = this->create_subscription<sensor_msgs::msg::Image>(
             "/oculus_m1200d/sonar_image", 10, std::bind(&vertical_scan::image_callback, this, std::placeholders::_1));
