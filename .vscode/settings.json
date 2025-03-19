@@ -70,5 +70,6 @@
         "variant": "cpp",
         "core": "cpp",
         "numericaldiff": "cpp"
-    }
+    },
+    "cmake.sourceDirectory": "/home/zyj/Documents/GitHub/UV_Sonar3D_ws/src/oculus_driver"
 }

@@ -1,6 +1,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/image.hpp"
 #include "sensor_msgs/msg/point_cloud2.hpp"
+#include "sensor_msgs/msg/imu.hpp"
 #include "std_msgs/msg/float32.hpp"
 
 #include "cv_bridge/cv_bridge.h"
@@ -33,11 +34,14 @@ private:
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr subscription_;
     rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr m750d_edge_pointcloud_subscription_;
     rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr depth_subscription_;
+    rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_subscription_;
     pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloud;
     double ScanRange;
     double PixelResolution;
     double z_p;
     volatile float current_depth;
+    float start_yaw;
+    volatile float current_yaw;
 
 public:
     vertical_scan(std::string name) : Node(name)
@@ -45,6 +49,8 @@ public:
         pointCloud = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
         ScanRange = 10.0;
         z_p = 0;
+        start_yaw = 0;
+        current_yaw = 0;
         subscription_ = this->create_subscription<sensor_msgs::msg::Image>(
             "/oculus_m1200d/sonar_image", 10, std::bind(&vertical_scan::image_callback, this, std::placeholders::_1));
 
@@ -55,6 +61,9 @@ public:
         auto depth_qos = rclcpp::QoS(rclcpp::KeepLast(10)).best_effort();
         depth_subscription_ =  this->create_subscription<std_msgs::msg::Float32>(
             "/YellowBot/depth", depth_qos, std::bind(&vertical_scan::depth_callback, this, std::placeholders::_1)); 
+        
+        imu_subscription_ = this->create_subscription<sensor_msgs::msg::Imu>(
+            "/YellowBot/imu", 10, std::bind(&vertical_scan::imu_callback, this, std::placeholders::_1));
     }
     ~vertical_scan(){
         RCLCPP_INFO(this->get_logger(), "vertical_scan over.");
@@ -168,11 +177,12 @@ private:
             float x_translation = 0.0 ; // Example translation in x-direction
             float y_translation = 0.0 ; // Example translation in y-direction
             float z_translation = - current_depth; // Example translation in z-direction
-            // float theta = - M_PI * 2 / 3; // Example rotation angle (120 degrees)
+            // float theta =  current_yaw - start_yaw; // Example rotation angle (120 degrees)
+            // RCLCPP_INFO(this->get_logger(), "theta is %f", theta);
             transform(0, 3) = x_translation;
             transform(1, 3) = y_translation;
             transform(2, 3) = z_translation;
-            // transform2.block<3, 3>(0, 0) = Eigen::AngleAxisf(theta, Eigen::Vector3f::UnitZ()).toRotationMatrix();
+            // transform.block<3, 3>(0, 0) = Eigen::AngleAxisf(theta, Eigen::Vector3f::UnitZ()).toRotationMatrix();
             // Apply the transformation to the input cloud
             pcl::transformPointCloud(*new_cloud, *new_cloud_depth, transform);
 
@@ -184,6 +194,22 @@ private:
     void depth_callback(const std_msgs::msg::Float32::SharedPtr msg){
         current_depth = msg->data;
         RCLCPP_INFO(this->get_logger(), "current depth is %f", current_depth);
+    }
+
+    void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg){
+        double q_x = msg->orientation.x;
+        double q_y = msg->orientation.y;
+        double q_z = msg->orientation.z;
+        double q_w = msg->orientation.w; 
+        // yaw (z-axis rotation)
+        double siny_cosp = 2 * (q_w * q_z + q_x * q_y);
+        double cosy_cosp = 1 - 2 * (q_y * q_y + q_z * q_z);
+        current_yaw = std::atan2(siny_cosp, cosy_cosp);
+
+        if( start_yaw==0 && current_depth >= 1 && current_depth <=7 ){
+            start_yaw = current_yaw;
+        }
+        // RCLCPP_INFO(this->get_logger(), "current_yaw is %f ,start_yaw is %f", current_yaw,start_yaw);
     }
 };
 

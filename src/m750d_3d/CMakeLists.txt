@@ -20,6 +20,7 @@ find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(pcl_conversions REQUIRED)
 find_package(PCL REQUIRED COMPONENTS common io visualization filters segmentation)
+find_package(oculus_interfaces REQUIRED)
 
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
@@ -55,6 +56,28 @@ ament_target_dependencies(
 )
 target_link_libraries(vertical_scan_reconstruction ${PCL_LIBRARIES})
 
+add_executable(vertical_scan_reconstruction_with_imu src/vertical_scan_reconstruction_with_imu.cpp src/image_fun.cpp)
+ament_target_dependencies(
+  vertical_scan_reconstruction_with_imu 
+  rclcpp 
+  sensor_msgs 
+  cv_bridge
+  OpenCV
+  pcl_conversions
+)
+target_link_libraries(vertical_scan_reconstruction_with_imu ${PCL_LIBRARIES})
+
+add_executable(vertical_scan_save_data_csv src/vertical_scan_save_data_csv.cpp src/image_fun.cpp)
+ament_target_dependencies(
+  vertical_scan_save_data_csv 
+  rclcpp 
+  sensor_msgs 
+  cv_bridge
+  OpenCV
+  pcl_conversions
+  oculus_interfaces
+)
+target_link_libraries(vertical_scan_save_data_csv ${PCL_LIBRARIES})
 
 add_executable(pc_stitch src/pc_stitch.cpp )
 ament_target_dependencies(
@@ -70,6 +93,8 @@ install(TARGETS
   m750d_3D
   simu_m750d_3D
   vertical_scan_reconstruction
+  vertical_scan_save_data_csv
+  vertical_scan_reconstruction_with_imu
   pc_stitch
   DESTINATION lib/${PROJECT_NAME}
 )
